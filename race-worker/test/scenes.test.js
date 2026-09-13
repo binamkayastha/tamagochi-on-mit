@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { COLS, LANE_COLS, OFF, ROWS, buildFrame, climbTop } from "../src/render.js";
+import { COLS, LANE_COLS, OFF, RACE_BOTTOM, RACE_TOP, ROWS, buildFrame } from "../src/render.js";
 import { DEFAULT_MAX_BRIGHTNESS, FlashGuard, GUARD_FLASHES_PER_SECOND, MAX_FLASHES_PER_SECOND, capBrightness, worstFlashRate } from "../src/safety.js";
 import {
   ANIMATED_STATUSES,
@@ -58,8 +58,17 @@ test("every scene frame is 17x9 RGB", () => {
 test("scene hand-offs don't jump", () => {
   const same = (a, b) => assert.deepEqual(a, b);
   same(introFrame(INTRO_MS), countdownFrame(0)); // intro end = countdown before its first digit fades in
-  same(countdownFrame(3000), raceStartFrame()); // countdown end = the race's first frame
-  same(introFrame(20_000, { introSeconds: 20 }), raceStartFrame());
+});
+
+test("the race takes over the stage the countdown leaves", () => {
+  // The race fills the lanes rather than climbing them, so the challengers standing on the
+  // riverbank are replaced by empty lanes the moment it starts: the countdown's last frame is
+  // no longer pixel-identical to the race's first. What must not change is the stage around it.
+  const last = countdownFrame(3000);
+  const first = raceStartFrame();
+  assert.deepEqual(last[0], first[0]); // the gold finish line
+  assert.deepEqual(last[ROWS - 1], first[ROWS - 1]); // the Charles
+  for (let r = 1; r < ROWS - 1; r++) assert.deepEqual(first[r][4], OFF); // the gap between lanes
 });
 
 test("intro beats scale with the configured length", () => {
@@ -79,19 +88,22 @@ test("countdown shows 3, 2, 1 and nothing for longer countdowns' early seconds",
 test("frameFor follows the status", () => {
   const base = { champion: null, config: { introSeconds: 10, countdownSeconds: 3 }, phaseStartedAt: 0, winner: null };
   assert.deepEqual(frameFor({ ...base, status: "intro" }, 10_000), countdownFrame(3000));
-  assert.deepEqual(frameFor({ ...base, status: "countdown" }, 3000), raceStartFrame());
   const progressCols = { mit: 0, harvard: 0, bu: 0, neu: 0 };
   assert.deepEqual(frameFor({ ...base, status: "running", progressCols }, 0), raceStartFrame());
 });
 
-test("mascots start on the riverbank and climb to the finish line", () => {
-  assert.equal(climbTop(0), 13);
-  assert.equal(climbTop(8), 1);
+test("lanes fill from the river up to the finish line", () => {
   const frame = buildFrame({ progressCols: { mit: 8, harvard: 4, bu: 0, neu: 2 }, status: "running", winner: null });
-  const litRows = (col) => frame.map((row, r) => (row[col] === OFF ? null : r)).filter((r) => r !== null);
-  assert.deepEqual(litRows(LANE_COLS[0]).slice(0, 4), [0, 1, 2, 3]); // MIT's mascot is under the finish line
-  assert.equal(litRows(LANE_COLS[2]).at(1), 13); // BU hasn't left the riverbank (row 0 = finish line)
-  assert.equal(frame[15][LANE_COLS[1]] !== OFF, true); // Harvard leaves a trail down to the river
+  const lit = (col) => frame.map((row, r) => (row[col] === OFF ? null : r)).filter((r) => r !== null);
+  const bright = (col, row) => Math.max(...frame[row][col]);
+
+  // MIT is full: every floor between the finish line and the river is lit
+  assert.deepEqual(lit(LANE_COLS[0]).slice(0, 3), [0, 1, 2]);
+  // BU has nothing yet, so its lane sits at the unlit tint rather than going dark
+  assert.notDeepEqual(frame[RACE_BOTTOM][LANE_COLS[2]], OFF);
+  assert.ok(bright(LANE_COLS[2], RACE_BOTTOM) < bright(LANE_COLS[0], RACE_BOTTOM));
+  // Harvard is half way: lit at the bottom, unlit at the top
+  assert.ok(bright(LANE_COLS[1], RACE_BOTTOM) > bright(LANE_COLS[1], RACE_TOP));
   assert.equal(frame[8][4], OFF); // the gap column between Harvard and BU stays dark
 });
 
@@ -119,12 +131,14 @@ test("the Duck King's ducklings follow it off the tower", () => {
 });
 
 test("only the Duck King is escorted", () => {
-  // a school mascot that won its way onto the throne abdicates alone, and walks the shorter
-  // distance over the same beat, so by now it is gone and nothing trails it
+  // Late in the waddle: a lone king (10 windows to cover) has left, while the Duck King's last
+  // duckling (34 windows for the procession) is still crossing. Derived from the beats so it
+  // keeps holding if the walk is retimed or the ducklings are spaced differently.
+  const late = INTRO_BEATS.meltEnd + 0.93 * (INTRO_BEATS.waddleEnd - INTRO_BEATS.meltEnd);
   for (const champion of SCHOOLS) {
-    assert.equal(litColumns(13_500, TRAIL_ROWS, champion).size, 0, `${champion} should have no ducklings`);
+    assert.equal(litColumns(late, TRAIL_ROWS, champion).size, 0, `${champion} should have no ducklings`);
   }
-  assert.ok(litColumns(13_500, TRAIL_ROWS).size > 0); // the Duck King still has its escort
+  assert.ok(litColumns(late, TRAIL_ROWS).size > 0); // the Duck King still has its escort
 });
 
 test("config validation", () => {

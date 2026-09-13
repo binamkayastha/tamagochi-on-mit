@@ -4,7 +4,7 @@
 //   intro      abdicate   see INTRO_BEATS below: the king gives up the crown and waddles away,
 //                         then each challenger is introduced and takes its lane
 //   countdown  3, 2, 1    soft digits while the challengers wait on the riverbank
-//   running / finished    the climb itself (render.js)
+//   running / finished    the race itself (render.js)
 //
 // The last frame of each scene is the first frame of the next, so hand-offs don't jump.
 import { SCHOOLS, SCHOOL_INFO } from "./mascots.js";
@@ -24,7 +24,7 @@ import { CROWN, DIGITS, GOLD, MASCOTS, MASCOT_FOR_SCHOOL, blank, blit, drawLaneM
 import { winCelebrationFrame } from "./win-celebration.js";
 import { DEFAULT_MAX_BRIGHTNESS } from "./safety.js";
 
-export const DEFAULT_SCENE_CONFIG = { introSeconds: 26.5, countdownSeconds: 3, brightness: DEFAULT_MAX_BRIGHTNESS };
+export const DEFAULT_SCENE_CONFIG = { introSeconds: 28, countdownSeconds: 3, brightness: DEFAULT_MAX_BRIGHTNESS };
 // Shorter than ~14 s and the beats (especially the four introductions) blur together.
 // brightness: fraction of full channel value every pushed frame is capped to (see
 // safety.js's capBrightness) — 0.4 is dim-but-legible from across the Charles, 1 is no cap.
@@ -41,11 +41,11 @@ export const INTRO_BEATS = {
   riseEnd: 4500, //        2.5-4.5   the crown lifts off, floor by floor, to the top of the tower
   shineEnd: 5500, //       4.5-5.5   the crown waits at the top
   meltEnd: 6500, //        5.5-6.5   the crown spreads into the gold finish line
-  waddleEnd: 14000, //    6.5-14.0   the king waddles off the side of the tower, a window at a
+  waddleEnd: 15500, //    6.5-15.5   the king waddles off the side of the tower, a window at a
   //                                 time, its ducklings crossing in single file after it
-  introductions: 14000, // 14.0-26.0 each challenger in turn (INTRODUCTION ms each): rises big from
+  introductions: 15500, // 15.5-27.5 each challenger in turn (INTRODUCTION ms each): rises big from
   //                                 the river over its school colour, cheers, blinks, takes its lane
-  end: 26500,
+  end: 28000,
 };
 const INTRODUCTION = {
   length: 3000,
@@ -67,7 +67,7 @@ const PEDESTAL_ROW = KING_TOP + 9; // just under a centred 9x9 mascot
 // gets them: a school mascot that won its way onto the throne abdicates alone, and walks the same
 // beat more slowly because it has less ground to cover.
 const DUCKLINGS = 3;
-const DUCKLING_GAP = 6; // the 5x5 duckling plus a window of daylight, so they cross in single file
+const DUCKLING_GAP = 8; // the 5x5 duckling plus three windows of daylight, so they read as separate
 const DUCKLING_TOP = KING_TOP + 4; // their feet on the king's ground line
 const waddleReach = (escorted) => COLS + 1 + (escorted ? DUCKLING_GAP * DUCKLINGS : 0);
 const RIPPLE = [30, 80, 140];
@@ -138,7 +138,6 @@ export function reignFrame(t, { champion = null } = {}) {
   return grid;
 }
 
-/** The king bows, gives up the crown (it becomes the finish line) and waddles off the tower. */
 /** The king's escort: little ducks crossing after it, each bobbing out of step with the last. */
 function drawDucklings(grid, left) {
   const duck = MASCOTS.duck;
@@ -148,6 +147,7 @@ function drawDucklings(grid, left) {
   }
 }
 
+/** The king bows, gives up the crown (it becomes the finish line) and waddles off the tower. */
 function drawAbdication(grid, t, b, king) {
   if (t < b.waddleEnd) {
     const escorted = king === MASCOTS.duck;
@@ -241,6 +241,6 @@ export function frameFor(state, now) {
     case "finished":
       return winCelebrationFrame(t, { winner: state.winner, progressCols: state.progressCols });
     default: // "running"
-      return buildFrame(state);
+      return buildFrame(state, t);
   }
 }

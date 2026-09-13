@@ -47,10 +47,10 @@ test("every living-field frame generator returns a well-formed 17x9 RGB grid", (
   }
   for (const color of [
     [210, 160, 20], // duck king gold
-    [163, 31, 52], // mit
-    [120, 0, 200], // harvard
-    [204, 0, 0], // bu
-    [255, 255, 255], // neu
+    [220, 140, 50], // mit
+    [138, 43, 226], // harvard
+    [220, 30, 30], // bu
+    [90, 190, 255], // neu
   ]) {
     for (let t = 0; t <= FINALE_SECONDS * 1000; t += 200) {
       assertValidGrid(finaleFrame(t, { color, lane: 0.2 }));

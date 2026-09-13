@@ -54,19 +54,42 @@ export function drawRiverRow(grid, color = RIVER) {
   for (let c = 0; c < COLS; c++) grid[RIVER_ROW][c] = color;
 }
 
-/** progressCols: { schoolId: number 0..FINISH_COLUMNS (may be fractional) } */
-export function buildFrame({ progressCols, status, winner }) {
+export const RACE_TOP = 1; // the lanes fill rows 1-15, between the finish line and the river
+export const RACE_BOTTOM = RIVER_ROW - 1;
+const FLOORS = RACE_BOTTOM - RACE_TOP + 1;
+const WHITE = [205, 205, 205]; // full 255 white blooms into a blob on the lit facade
+
+const mixTo = (a, b, k) => a.map((v, i) => Math.round(v + (b[i] - v) * k));
+
+/** The race: each school's two windows fill with its colour, floor by floor, the surface of the
+ * fill catching the light. Ported from the Python prototype's Renderer._race (branch `ananya`).
+ *
+ * `t` (ms) only drives the shimmer on the lit part of each lane; every other pixel is a pure
+ * function of the state, so a frame at progress 0 is identical whenever it is drawn.
+ *
+ * progressCols: { schoolId: number 0..FINISH_COLUMNS (may be fractional) }
+ */
+export function buildFrame({ progressCols, status, winner }, t = 0) {
   const grid = Array.from({ length: ROWS }, () => Array.from({ length: COLS }, () => OFF));
 
   SCHOOLS.forEach((school, i) => {
+    const color = softenColor(SCHOOL_INFO[school].color);
     const left = LANE_COLS[i];
-    const top = climbTop(progressCols[school] ?? 0);
-    const trail = scale(softenColor(SCHOOL_INFO[school].color), TRAIL);
-    for (let r = top + MASCOT_HEIGHT; r < RIVER_ROW; r++) {
-      grid[r][left] = trail;
-      grid[r][left + 1] = trail;
+    const height = (Math.max(0, Math.min(FINISH_COLUMNS, progressCols[school] ?? 0)) / FINISH_COLUMNS) * FLOORS;
+    for (let floor = 0; floor < FLOORS; floor++) {
+      const level = height - floor; // >1 submerged, 0-1 the crest, <=0 still empty
+      for (const col of [left, left + 1]) {
+        let px;
+        if (level <= 0) {
+          px = mixTo(OFF, color, 0.18); // unlit lane, still reads as a lane
+        } else {
+          const shimmer = 0.8 + 0.16 * Math.sin((t / 1000) * 2.4 - floor * 0.55 + col);
+          px = scale(color, shimmer * Math.min(1, level));
+          if (level <= 1) px = mixTo(px, WHITE, 0.3 * level); // the surface catches the light
+        }
+        grid[RACE_BOTTOM - floor][col] = px;
+      }
     }
-    drawLaneMascot(grid, school, left, top);
   });
 
   // finish line: gold, or the winner's colour once someone's won
