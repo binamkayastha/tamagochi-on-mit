@@ -27,7 +27,10 @@
 #story-stage[data-mode=countdown] .challenger{opacity:1;top:70%;transform:translate(-50%,-50%) scale(.85)}#story-stage[data-mode=countdown] .countdown-digit{opacity:1;transform:translate(-50%,-50%) scale(1)}#story-stage[data-mode=countdown].final-second .finish-line{background:var(--gold);box-shadow:0 0 24px #ffd866}
 #story-stage[data-mode=running]{aspect-ratio:auto;max-height:94px;border-color:#ffffff18}#story-stage[data-mode=running]>:not(.story-copy){opacity:0!important}#story-stage[data-mode=running] .story-copy{top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;border:0;background:linear-gradient(90deg,var(--slate),var(--slate2))}
 #story-stage[data-mode=finished] #story-king{opacity:1;top:47%;transform:translate(-50%,-50%) scale(1.45)}#story-stage[data-mode=finished] .crown{opacity:1;top:24%;transform:translate(-50%,-50%) scale(1.2);animation:crownDrop .8s ease-out both}#story-stage[data-mode=finished] .confetti{opacity:1}@keyframes crownDrop{from{transform:translate(-50%,-130%) scale(1.2)}}
-#status-banner{text-align:center;padding:11px 14px;border-radius:0 0 10px 10px;background:#101728;border:1px solid #ffffff14;border-top:0;margin:0 8px 18px;font-weight:700;font-size:14px;color:var(--muted)}#status-banner strong{color:var(--paper)}#status-banner.finished{color:var(--brass)}.lanes{display:flex;flex-direction:column;gap:12px}.lane{background:var(--slate);border-radius:13px;padding:12px 14px 14px;border:1px solid #ffffff14;display:flex;flex-direction:column;gap:9px}.lane.winner{border-color:var(--school-color,var(--brass));box-shadow:0 0 0 1px var(--school-color,var(--brass)),0 0 24px #d7ad5122}.lane-head{display:flex;align-items:center;gap:11px}.sprite-box{flex:none;width:50px;height:50px;border-radius:7px;background:#0004;display:flex;align-items:center;justify-content:center}canvas.sprite{image-rendering:pixelated;width:44px;height:44px}.lane-names{flex:1}.lane-names .school{font-weight:700;font-size:16px}.lane-names .mascot{color:var(--muted);font-size:12px}.track{display:flex;gap:3px}.cell{flex:1;aspect-ratio:1;border-radius:2px;background:#0006;transition:background .2s}button.cheer{width:100%;padding:13px;border:0;border-radius:9px;font-size:15px;font-weight:700;color:var(--night);cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;position:relative;transition:transform .08s,filter .15s}button.cheer:active{transform:scale(.97);filter:brightness(1.15)}button.cheer:disabled{opacity:.3;cursor:default}.particle{position:absolute;top:6px;left:50%;width:8px;height:8px;pointer-events:none;animation:pop .7s ease-out forwards}@keyframes pop{to{transform:translate(var(--dx),-46px) scale(.4);opacity:0}}footer{text-align:center;color:var(--muted);font-size:12px;margin-top:29px}footer a{color:var(--brass)}#sound-toggle{position:fixed;right:12px;bottom:12px;z-index:50;display:flex;align-items:center;gap:7px;
+#status-banner{text-align:center;padding:11px 14px;border-radius:10px 10px 0 0;background:#101728;border:1px solid #ffffff14;border-bottom:0;font-weight:700;font-size:14px;color:var(--muted)}#status-banner strong{color:var(--paper)}#status-banner.finished{color:var(--brass)}
+#crowd-bar{position:relative;display:flex;justify-content:center;gap:16px;padding:8px 14px 9px;border-radius:0 0 10px 10px;background:#0d1424;border:1px solid #ffffff14;border-top:1px solid #ffffff0a;margin:0 8px 18px;font-size:12.5px;color:var(--muted)}
+#crowd-bar span{display:flex;align-items:center;gap:5px}#crowd-bar strong{color:var(--paper);font-variant-numeric:tabular-nums}
+.lanes{display:flex;flex-direction:column;gap:12px}.lane{background:var(--slate);border-radius:13px;padding:12px 14px 14px;border:1px solid #ffffff14;display:flex;flex-direction:column;gap:9px}.lane.winner{border-color:var(--school-color,var(--brass));box-shadow:0 0 0 1px var(--school-color,var(--brass)),0 0 24px #d7ad5122}.lane-head{display:flex;align-items:center;gap:11px}.sprite-box{flex:none;width:50px;height:50px;border-radius:7px;background:#0004;display:flex;align-items:center;justify-content:center}canvas.sprite{image-rendering:pixelated;width:44px;height:44px}.lane-names{flex:1}.lane-names .school{font-weight:700;font-size:16px}.lane-names .mascot{color:var(--muted);font-size:12px}.track{display:flex;gap:3px}.cell{flex:1;aspect-ratio:1;border-radius:2px;background:#0006;transition:background .2s}button.cheer{width:100%;padding:13px;border:0;border-radius:9px;font-size:15px;font-weight:700;color:var(--night);cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none;position:relative;transition:transform .08s,filter .15s}button.cheer:active{transform:scale(.97);filter:brightness(1.15)}button.cheer:disabled{opacity:.3;cursor:default}.particle{position:absolute;top:6px;left:50%;width:8px;height:8px;pointer-events:none;animation:pop .7s ease-out forwards}@keyframes pop{to{transform:translate(var(--dx),-46px) scale(.4);opacity:0}}footer{text-align:center;color:var(--muted);font-size:12px;margin-top:29px}footer a{color:var(--brass)}#sound-toggle{position:fixed;right:12px;bottom:12px;z-index:50;display:flex;align-items:center;gap:7px;
 padding:10px 14px;border:1px solid #ffffff22;border-radius:999px;background:#101728ee;color:var(--paper);
 font:inherit;font-size:13px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;
 backdrop-filter:blur(6px);transition:transform .08s,border-color .2s}
@@ -51,7 +54,9 @@ backdrop-filter:blur(6px);transition:transform .08s,border-color .2s}
 <div class="ducklings" aria-hidden="true"><canvas class="duckling" width="36" height="36"></canvas><canvas class="duckling" width="36" height="36"></canvas><canvas class="duckling" width="36" height="36"></canvas></div>
 <div id="story-challengers"></div><div class="decree"><strong>Royal decree</strong><span>The Duck King is officially<br>ON PARENTAL LEAVE</span></div><div class="countdown-digit" id="countdown-digit">3</div><div class="confetti"><i></i><i></i><i></i><i></i></div>
 <div class="story-copy"><p id="story-title">THE DUCK KING RULES THE CHARLES</p><p id="story-detail">A peaceful reign. Mostly.</p></div></section>
-<div id="status-banner">The throne is occupied. The race begins soon.</div><section class="lanes" id="lanes" aria-label="Race competitors"></section><footer>Watch it live on the building, or at <a href="https://sundai.willsarg.com">the simulator</a>.</footer>
+<div id="status-banner">The throne is occupied. The race begins soon.</div>
+<div id="crowd-bar"><span>👥 <strong id="viewer-count">–</strong></span><span>🔥 <strong id="hype-gauge">–</strong>/s</span></div>
+<section class="lanes" id="lanes" aria-label="Race competitors"></section><footer>Watch it live on the building, or at <a href="https://sundai.willsarg.com">the simulator</a>.</footer>
 <button id="sound-toggle" aria-live="polite" aria-label="Sound off. Tap for sound.">
 <span id="sound-icon">🔇</span><span id="sound-label">tap for sound</span></button>
 </main><script src="config.js"></script><script>
@@ -246,6 +251,51 @@ document.querySelectorAll('.cheer').forEach(button=>{button.disabled=true});
   window.render = function(s){
     try { onState(s); } catch (e) {}
     return origRender.apply(this, arguments);
+  };
+})();
+</script>
+<script>
+/* ---------------------------------------------------------------------------
+   Crowd presence: "other people are here too", from data the server already
+   has (who's polling, who just cheered) — a live viewer count, a cheers/sec
+   gauge, and a small particle pulse in the school's colour for every cheer
+   anyone lands, not just your own.
+
+   The pulse deliberately doesn't fire for the batch of recent cheers a phone
+   sees on its very first poll — those predate this page load, and bursting
+   several seconds of history at once on arrival would read as a glitch, not
+   a crowd.
+--------------------------------------------------------------------------- */
+(function(){
+  const bar = document.getElementById('crowd-bar');
+  const viewerEl = document.getElementById('viewer-count');
+  const hypeEl = document.getElementById('hype-gauge');
+  if (!bar || !viewerEl || !hypeEl) return;
+
+  const PULSE_COLOR = { mit: 'var(--mit)', harvard: 'var(--harvard)', bu: 'var(--bu)', neu: 'var(--neu)' };
+  let lastPulseT = null; // null = haven't established a baseline yet
+
+  function onState(s){
+    if (!s) return;
+    if (typeof s.viewerCount === 'number') viewerEl.textContent = s.viewerCount;
+    if (typeof s.hype === 'number') hypeEl.textContent = s.hype.toFixed(1);
+
+    const events = s.recentCheers || [];
+    if (lastPulseT === null){
+      lastPulseT = events.length ? events[events.length - 1].t : 0;
+      return;
+    }
+    const fresh = events.filter((e) => e.t > lastPulseT);
+    if (!fresh.length) return;
+    lastPulseT = events[events.length - 1].t;
+    // cap how many burst per poll — a big spike should still read as "busy", not chaos
+    fresh.slice(-6).forEach((e, i) => setTimeout(() => burst(bar, PULSE_COLOR[e.school] || 'var(--brass)'), i * 70));
+  }
+
+  const prevRender = window.render;
+  window.render = function(s){
+    try { onState(s); } catch (e) {}
+    return prevRender.apply(this, arguments);
   };
 })();
 </script></body></html>

@@ -30,7 +30,8 @@ export default {
 
     try {
       if (url.pathname === "/api/state" && request.method === "GET") {
-        return json(await race.getState());
+        const ip = request.headers.get("CF-Connecting-IP") ?? "unknown";
+        return json(await race.getState(ip));
       }
 
       if (url.pathname === "/api/cheer" && request.method === "POST") {
