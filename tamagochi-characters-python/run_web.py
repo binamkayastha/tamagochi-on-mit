@@ -6,7 +6,7 @@ import pygame
 from gbsim import WebDisplay
 from tetris import Tetris
 
-INSTANCE = sys.argv[1] if len(sys.argv) > 1 else "misty-newt"
+INSTANCE = sys.argv[1] if len(sys.argv) > 1 else "cobalt-mole"
 
 if __name__ == "__main__":
     # tetris.py assumes its Display already brought up pygame's video system (DummyDisplay

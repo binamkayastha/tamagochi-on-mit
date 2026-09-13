@@ -9,7 +9,7 @@ from tkinter import ttk
 
 from gbsim import Color, WebDisplay
 
-INSTANCE = sys.argv[1] if len(sys.argv) > 1 else "misty-newt"
+INSTANCE = sys.argv[1] if len(sys.argv) > 1 else "cobalt-mole"
 CANVAS_W, CANVAS_H = 9, 17
 OFF = "#212a40"
 EYE = "#14121a"

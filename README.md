@@ -35,9 +35,11 @@ curl -X POST https://sundai.willsarg.com/api/instances \
 ```
 
 This copies a `send_url`/`view_url`/`ws_url` back. Both scripts below default to the
-instance `misty-newt`; pass a different name as the first argument if that one is
-ever reset (only one program should target an instance at a time — two at once makes
-the display flicker between them).
+instance `cobalt-mole` — the same one the [race website](race-worker) uses in
+production (its `SIM_INSTANCE` secret) — so the whole project stays on one simulator
+instance instead of everyone spinning up their own. Pass a different name as the first
+argument if you want to test something without disturbing the shared one; only one
+program should target a given instance at a time, or the display flickers between them.
 
 ## Run
 
@@ -57,3 +59,19 @@ python3 tamagochi-characters-python/run_web.py [instance-name]
 
 Then watch either one live at `https://sundai.willsarg.com/<instance-name>`
 (add `?view=street` or `?view=river` for the other camera angles).
+
+## The event: a mascot race
+
+Since the display window is short (~20 min), the live show is a race: 4 school mascots
+(MIT's beaver, Harvard's John Harvard, BU's terrier, Northeastern's husky) climb the
+building as the crowd cheers for them from their phones. That's a separate app:
+
+- [`race-worker/`](race-worker) — Cloudflare Worker + Durable Object: holds the race
+  state, exposes the cheer/admin API, and is the only thing that talks to the sim (the
+  event password stays server-side). See its README for setup/deploy.
+- [`race-site/`](race-site) — the Cloudflare Pages frontend: a public cheer page and an
+  admin page to start/stop/reset the race.
+
+Someone else owns the mascot art/animation ("cheering models", `mascots` branch) and the
+frame transitions; `race-worker/src/render.js` draws simple solid lane bars for now and is
+meant to be swapped out once those land.

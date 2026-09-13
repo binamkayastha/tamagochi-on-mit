@@ -1,0 +1,3 @@
+SIM_INSTANCE=your-sim-instance-name
+SIM_PASSWORD=the-event-password
+ADMIN_KEY=pick-any-string-for-local-testing
