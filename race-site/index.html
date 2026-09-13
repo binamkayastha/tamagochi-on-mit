@@ -39,6 +39,26 @@ backdrop-filter:blur(6px);transition:transform .08s,border-color .2s}
 #sound-toggle.on #sound-label{display:none}
 @media(prefers-reduced-motion:reduce){#sound-toggle{transition:none}}
 
+#set-toggle{position:fixed;left:12px;bottom:12px;z-index:50;display:flex;align-items:center;gap:7px;
+padding:10px 14px;border:1px solid #ffffff22;border-radius:999px;background:#101728ee;color:var(--paper);
+font:inherit;font-size:13px;font-weight:700;cursor:pointer;-webkit-tap-highlight-color:transparent;
+backdrop-filter:blur(6px);transition:transform .08s,border-color .2s}
+#set-toggle:active{transform:scale(.95)}
+#set-toggle.playing{border-color:var(--brass);color:var(--brass)}
+#set-toggle.muted{border-color:#ffffff44}
+#set-note{position:fixed;left:12px;bottom:58px;z-index:50;max-width:min(280px,72vw);
+padding:9px 12px;border:1px solid #ffffff22;border-radius:11px;background:#101728f2;color:var(--muted);
+font-size:12px;line-height:1.45;backdrop-filter:blur(6px)}
+#set-note strong{color:var(--paper)}
+#dj-panel{position:fixed;left:12px;bottom:58px;z-index:50;width:min(300px,80vw);
+padding:12px 14px;border:1px solid var(--brass);border-radius:13px;background:#101728f2;
+backdrop-filter:blur(6px);display:flex;flex-direction:column;gap:9px}
+#dj-panel .row{display:flex;align-items:center;gap:9px;font-size:12px;color:var(--muted)}
+#dj-panel .row span{font-variant-numeric:tabular-nums}
+#dj-panel input[type=range]{flex:1;accent-color:var(--brass);min-width:0}
+#dj-title{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--brass);font-weight:700}
+@media(prefers-reduced-motion:reduce){#set-toggle{transition:none}}
+
 @media(min-width:560px){#story-stage{aspect-ratio:16/10}.story-copy{left:22px;right:22px}.challenger canvas{width:70px;height:70px}.challenger .actor-label{font-size:7px}}@media(max-width:350px){body{padding-left:9px;padding-right:9px}.actor{width:72px}.challenger canvas{width:51px;height:51px}.challenger .actor-label{font-size:5px}.story-copy{left:8px;right:8px}#story-title{font-size:8px}}@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition-duration:.01ms!important}.particle,.confetti{display:none}}
 #story-stage:not(.duck-reign)[data-mode=intro][data-scene=depart] .ducklings{opacity:0}
 #story-stage[data-mode=intro][data-scene=crown-melt] .finish-line,#story-stage[data-mode=intro][data-scene=lineup] .finish-line{opacity:1;transform:scaleX(1)}
@@ -59,6 +79,14 @@ backdrop-filter:blur(6px);transition:transform .08s,border-color .2s}
 <section class="lanes" id="lanes" aria-label="Race competitors"></section><footer>Watch it live on the building, or at <a href="https://sundai.willsarg.com">the simulator</a>.</footer>
 <button id="sound-toggle" aria-live="polite" aria-label="Sound off. Tap for sound.">
 <span id="sound-icon">🔇</span><span id="sound-label">tap for sound</span></button>
+<div id="set-note" hidden></div>
+<div id="dj-panel" hidden>
+<div id="dj-title">Presenter &middot; the set</div>
+<div class="row"><span id="dj-clock">0:00 / 0:00</span><input id="dj-seek" type="range" min="0" max="1000" value="0" aria-label="Seek within the set"></div>
+<div class="row">🔈<input id="dj-vol" type="range" min="0" max="100" value="85" aria-label="Set volume"></div>
+</div>
+<button id="set-toggle" aria-live="polite" aria-label="The DJ set is off. Tap to listen.">
+<span id="set-icon">🎧</span><span id="set-label">the set</span></button>
 </main><script src="config.js"></script><script>
 const COMMON={N:'#ff5078',T:'#bebeb4',Y:'#ffbe00'},WHITE='#fff';
 const MASCOTS={
@@ -197,27 +225,81 @@ document.querySelectorAll('.cheer').forEach(button=>{button.disabled=true});
   const el = document.getElementById('sound-toggle');
   if (!el) return;
   const icon  = document.getElementById('sound-icon');
+  const label = document.getElementById('sound-label');
   const audio = new Audio('win.m4a');
   audio.preload = 'auto';          // 0.4 MB, so it is ready long before it is needed
 
-  let wanted = false, unlocked = false, playedFor = null;
+  // A quarter-second click, generated here rather than fetched, so the tap can
+  // answer the only question that matters: does this phone actually make a
+  // noise right now? Nobody can debug forty handsets at the finish line, but
+  // each person can check their own before the race starts.
+  const TICK = 'data:audio/wav;base64,UklGRisGAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQcGAACApL/LxKyJZEY2OExskbHFyLmceFY+N0FbfaC7x8Ksi2hKOjtNa46twcW4nHpaQjpDW3ydt8S/q4xrTj4+TmqLqr3Ctp18XUY+RVt6mrPAvaqObVJCQU9qiaa6v7SdfmBKQUdbeJewvbqqj3BVRUNQaYejtryznYBjTURJXHeUrLm4qY9yWUlGUmmFoLO5sZ2CZlFHS1x2kqm2tqiQdVxMSVNog52wtq+dg2lUSk1ddY+ms7OnkXdfT0tUaIGarLSunYRrV01PXXSNo7CxppF4YVJOVmiAmKqxrJyGbVpPUV5zi6Ctr6WSemRVUFdof5Wnrquch3BcUlNfcomeq62kknxmV1JYaH2TpKypnIhxX1VVX3KIm6iro5J9aVpUWmh8kaKqp5uIc2FXV2BxhpmmqaKSfmtcVltoe4+fp6abiXVkWVhhcYWXo6ehkoBtX1lcaHqNnaWkmop3ZltaYnGDlaGloJKBb2FbXWl6jJujo5qKeGheXGNxgpOfo5+SgnBjXF9peYqZoaGZi3lqYF1jcIGRnaKekoJyZV5gaXiJl5+gmIt7bGJfZHCAkJugnZKDc2dgYWp4h5WenpiLfG1jYGVwf46ZnpyShHVoYmJqd4aUnJ2Xi31vZWJmcH6NmJ2akoR2amNka3eFkpqclox+cGdjZ3B+i5abmZGFd2xlZWt3hJCZm5aMf3JoZWhwfYqUmpiRhXhtZmZsdoOPl5mVjH9zamZocXyJk5iXkYZ5b2hnbHaCjpaYlIyAdGtnaXF8iJKXl5CGenBpaG12gYyUl5SMgXVtaWpxe4eQlpaQh3txa2ltdoGLk5aTjIF2bmprcXuGj5SVkId8cmxqbnaAipKVkoyCd29rbHF7hY6TlI+HfXNta252f4mQlJKLgnhwbG1yeoSNkpOPh350bmxvdn+Ij5ORi4N5cW1tcnqDjJGSjod+dW9tb3Z+h46SkIuDenJubnJ6g4uQkY6Hf3ZwbnB2foaNkZCLg3tzb29zeoKKj5COh393cW9xdn6GjJCPi4R7dHBwc3mBiY6QjYeAeHJwcXZ9hYuPj4qEfHVxcHN5gYiNj42HgHlzcHJ2fYSLjo6KhH12cnF0eYCHjI6Mh4F5dHFydn2Eio2NioR9d3NydHmAh4uNjIeBenVyc3Z8g4mMjYqEfnhzcnR5gIaLjYuHgXt1c3N3fIOIjIyJhH54dHN1eX+FioyLh4F7dnN0d3yCiIuMiYR/eXVzdXl/hYmLi4eCfHd0dHd8goeKi4mFf3l1dHV5f4SJi4qHgnx4dXV3fIGGioqJhX96dnV2eX6EiIqKh4J9eHV1d3yBhomKiIWAe3d1dnl+g4eKiYeCfXl2dnh8gYWIiYiFgHt3dnZ5foOHiYmGgn55dnZ4fICFiImIhYB7eHZ3en6ChoiIhoJ+end2eHuAhIeJiIWAfHh3d3p+goaIiIaDfnp4d3h7gISHiIeEgXx5d3d6fYKFh4iGg397eHd4e3+DhoiHhIF9eXh4en2BhYeHhoN/e3h4eXt/g4aHh4SBfXp4eHp9gYSHh4aDf3t5eHl7f4OFh4aEgX16eHh6fYGEhoeFg398eXh5e3+ChYaGhIF+e3l5en2AhIaGhYN/fHp5eXx/goWGhoSBfnt5eXp9gIOFhoWDgH16eXp8foKEhoaEgX57enl6fYCDhYaFg4B9enl6fH6BhIWFhIF+fHp6e32Ag4WFhYOAfXt6enx+gYSFhYSBf3x6ent9gIKEhYWDgH17enp8foGDhYWEgX98e3p7fX+ChIWEg4B+e3p6fH6Bg4SFhIJ/fXt6e31/goSFhIOAfnx7e3x+gYOEhIOCf317e3t9f4KDhISDgH58e3t8foCChISDgn99e3t7fX+Bg4SEg4F+fHt7fH6AgoSEg4J/fXx7fH1/gYOEhIKBfn17e3x+gIKDhIOCgH58e3x9f4GDhIOCgX99fHt8foCCg4SDgoB+fHx8fX+BgoODgoF/fXx8fH6AgoODg4KAfnx8fH1/gYKDg4KBf318fHx+gIGDg4OCgH59fHx9f4CCg4OCgX99fHx9foCB';
+
+  let wanted = false, unlocked = false, playedFor = null, failed = false;
   const KEY = 'koc-sound';
   try { wanted = localStorage.getItem(KEY) === 'on'; } catch (e) {}
 
   function paint(){
-    el.classList.toggle('on', wanted);
-    icon.textContent = wanted ? '🔊' : '🔇';
-    el.setAttribute('aria-label', wanted ? 'Sound on. Tap to mute.'
-                                         : 'Sound off. Tap for sound.');
+    // "On" means on: armed AND actually able to play. A remembered preference
+    // from a previous visit is not permission -- browsers throw that away on
+    // reload, and showing a confident speaker icon over an element that cannot
+    // play is how a phone ends up silent with nobody realising until the end.
+    const live = wanted && unlocked && !failed;
+    el.classList.toggle('on', live);
+    icon.textContent = failed ? '⚠️' : live ? '🔊' : '🔇';
+    if (label) label.textContent = failed ? 'tap again' : 'tap for sound';
+    el.setAttribute('aria-label', live ? 'Sound on. Tap to mute.'
+                                       : 'Sound off. Tap for sound.');
   }
   paint();
+
+  // Keeping the screen awake. A locked phone will not start new audio, and
+  // phones lock in half a minute. Asked for on the tap, and asked for again
+  // whenever the page comes back to the front, because the lock is dropped
+  // every time the phone is pocketed.
+  let lock = null;
+  async function keepAwake(){
+    if (!wanted || !('wakeLock' in navigator)) return;
+    try { lock = await navigator.wakeLock.request('screen'); } catch (e) {}
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && !lock) keepAwake();
+  });
 
   el.addEventListener('click', () => {
     wanted = !wanted;
     try { localStorage.setItem(KEY, wanted ? 'on' : 'off'); } catch (e) {}
-    unlocked = true;
+    failed = false;
+
+    if (!wanted){
+      if (!audio.paused) audio.pause();
+      if (lock){ lock.release().catch(() => {}); lock = null; }
+      paint();
+      return;
+    }
+
+    // THE UNLOCK. This has to be a real play() on this exact element, inside
+    // the handler for a real tap. A phone does not care what we set a variable
+    // to; it cares whether a human asked for sound. Start it, stop it, rewind
+    // it -- from here on the element is allowed to speak on its own.
+    audio.load();                        // start fetching now, not at the finish
+    audio.play().then(() => {
+      // Rewind, unless the win happened while we were waiting -- stopping the
+      // celebration to tidy up after the unlock would be an own goal.
+      if (playedFor === null){
+        audio.pause();
+        audio.currentTime = 0;
+      }
+      unlocked = true;
+      paint();
+    }).catch(() => {
+      failed = true;                     // say so, rather than fail silently later
+      paint();
+    });
+
+    new Audio(TICK).play().catch(() => {});   // proof the speaker works
+    keepAwake();
     paint();
-    if (!wanted && !audio.paused) audio.pause();
   });
 
   function onState(s){
@@ -242,7 +324,9 @@ document.querySelectorAll('.cheer').forEach(button=>{button.disabled=true});
 
     playedFor = who;
     try { audio.currentTime = Math.max(0, since); } catch (e) {}
-    audio.play().catch(() => { playedFor = null; });    // let it try again
+    audio.play().catch(() => { playedFor = null; failed = true; paint(); });
+    // Tell the set to get out of the way for a moment.
+    window.dispatchEvent(new CustomEvent('koc-win'));
   }
 
   // Piggyback on the page's existing 500 ms poll rather than adding a second
@@ -252,6 +336,164 @@ document.querySelectorAll('.cheer').forEach(button=>{button.disabled=true});
     try { onState(s); } catch (e) {}
     return origRender.apply(this, arguments);
   };
+})();
+</script><script>
+/* ---------------------------------------------------------------------------
+   The set. One room, one loud copy, everybody else on headphones.
+
+   Forty phones playing the same track out loud is not music -- the same sound
+   arriving at each ear a few hundred milliseconds apart cancels itself in
+   patches, and a room full of that is a smeared echo. Headphones remove the
+   problem entirely, because nobody hears anybody else's copy. So:
+
+     - Open the page normally and the set starts MUTED, with a note asking for
+       headphones. Muted is the honest default: it costs nothing if you ignore
+       it, and it cannot spoil the room for the person beside you.
+     - Plug headphones in, or tap again, and it plays.
+     - One device runs ?dj=1 -- the laptop wired to the PA. That one starts
+       out loud and gets a scrubber and a volume slider, because it is the
+       copy the room actually hears.
+
+   NOT SYNCHRONISED, ON PURPOSE
+
+   An earlier draft lined every device up against the server clock. On
+   headphones that buys nothing -- you only ever hear your own copy, so being
+   nine seconds off matches nobody's experience of anything -- and it is more
+   code and more to go wrong. Each device just plays. The one that matters is
+   the one plugged into the PA.
+--------------------------------------------------------------------------- */
+(function(){
+  const chip = document.getElementById('set-toggle');
+  if (!chip) return;
+  const icon  = document.getElementById('set-icon');
+  const label = document.getElementById('set-label');
+  const note  = document.getElementById('set-note');
+  const panel = document.getElementById('dj-panel');
+  const seek  = document.getElementById('dj-seek');
+  const vol   = document.getElementById('dj-vol');
+  const clock = document.getElementById('dj-clock');
+
+  const presenter = new URLSearchParams(location.search).get('dj') === '1';
+  const set = new Audio('set.m4a');
+  set.loop = true;                 // 33 minutes, but a long setup should not fall silent
+  set.preload = presenter ? 'auto' : 'none';   // 23 MB: only the PA machine prefetches it
+
+  // off -> muted -> playing -> off. The label always says what the next tap does,
+  // which is the only documentation a stranger holding a phone will ever read.
+  let state = 'off', failed = false, taps = 0;
+
+  function mmss(t){
+    if (!isFinite(t)) return '0:00';
+    const m = Math.floor(t/60), s = Math.floor(t%60);
+    return m + ':' + String(s).padStart(2,'0');
+  }
+
+  function paint(){
+    chip.classList.toggle('playing', state === 'playing');
+    chip.classList.toggle('muted',   state === 'muted');
+    icon.textContent  = failed ? '⚠️' : state === 'playing' ? '🎧' : state === 'muted' ? '🔇' : '🎧';
+    label.textContent = failed ? 'tap again'
+                      : state === 'playing' ? 'the set · playing'
+                      : state === 'muted'   ? 'tap to unmute'
+                      : 'the set';
+    chip.setAttribute('aria-label',
+      state === 'playing' ? 'The set is playing. Tap to stop.'
+      : state === 'muted' ? 'The set is muted. Tap to unmute.'
+      : 'The DJ set is off. Tap to listen.');
+    note.hidden = state !== 'muted';
+    if (presenter) panel.hidden = state === 'off';
+  }
+
+  function stop(){
+    taps++;                                 // any pending play() answer is stale now
+    set.pause();
+    state = 'off';
+    paint();
+  }
+
+  chip.addEventListener('click', () => {
+    failed = false;
+
+    if (state === 'playing'){ stop(); return; }
+
+    if (state === 'muted'){                 // second tap: they have their headphones in
+      taps++;
+      set.muted = false;
+      state = 'playing';
+      paint();
+      return;
+    }
+
+    // First tap. The play() has to happen right here, inside the tap, or the
+    // browser will not let this element make a sound later on its own.
+    //
+    // 23 MB means play() can take seconds to actually start, and the person is
+    // not going to stand still while it does. So the tap decides the state
+    // immediately and the promise is only allowed to report a FAILURE, and
+    // only if it is still the most recent tap. An answer to a question nobody
+    // is asking any more gets thrown away.
+    const tap = ++taps;
+    set.muted = !presenter;                 // the PA machine starts out loud
+    set.play().catch(() => {
+      if (tap !== taps) return;             // superseded; not our business
+      failed = true;
+      state = 'off';
+      paint();
+    });
+
+    note.innerHTML = '<strong>Use headphones.</strong> Phone speakers all playing '
+                   + 'this at once turn the room to mush. Muted until you say otherwise.';
+    state = presenter ? 'playing' : 'muted';
+    paint();
+  });
+
+  // Best effort only: some phones tell a web page when the audio output changes
+  // and some say nothing at all. When we do get told, take it as "headphones
+  // are in" and turn the sound on, which is what the person was waiting for.
+  if (navigator.mediaDevices && navigator.mediaDevices.addEventListener){
+    navigator.mediaDevices.addEventListener('devicechange', () => {
+      if (state !== 'muted') return;
+      set.muted = false;
+      state = 'playing';
+      note.innerHTML = '<strong>Headphones detected.</strong> Sound on.';
+      note.hidden = false;
+      setTimeout(() => { if (state === 'playing') note.hidden = true; }, 3000);
+      paint();
+    });
+  }
+
+  // Duck for the crowning, the same way the laptop does: the fanfare should
+  // land on top of the music, not fight it.
+  window.addEventListener('koc-win', () => {
+    if (set.muted || set.paused) return;
+    const from = set.volume;
+    set.volume = from * 0.2;
+    const back = setInterval(() => {
+      set.volume = Math.min(from, set.volume + from * 0.08);
+      if (set.volume >= from - 0.001){ set.volume = from; clearInterval(back); }
+    }, 120);
+  });
+
+  // --- the presenter's controls ---------------------------------------------
+  // iOS ignores volume set from a script, which is fine: this panel is for the
+  // laptop plugged into the PA, and that is the only copy the room hears.
+  if (presenter){
+    set.volume = 0.85;
+    vol.addEventListener('input', () => { set.volume = vol.value / 100; });
+    let scrubbing = false;
+    seek.addEventListener('pointerdown', () => { scrubbing = true; });
+    seek.addEventListener('change', () => {
+      if (set.duration) set.currentTime = (seek.value / 1000) * set.duration;
+      scrubbing = false;
+    });
+    setInterval(() => {
+      if (!set.duration) return;
+      if (!scrubbing) seek.value = Math.round((set.currentTime / set.duration) * 1000);
+      clock.textContent = mmss(set.currentTime) + ' / ' + mmss(set.duration);
+    }, 500);
+  }
+
+  paint();
 })();
 </script>
 <script>
@@ -298,4 +540,5 @@ document.querySelectorAll('.cheer').forEach(button=>{button.disabled=true});
     return prevRender.apply(this, arguments);
   };
 })();
-</script></body></html>
+</script>
+</body></html>
