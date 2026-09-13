@@ -382,6 +382,14 @@ document.querySelectorAll('.cheer').forEach(button=>{button.disabled=true});
   // which is the only documentation a stranger holding a phone will ever read.
   let state = 'off', failed = false, taps = 0;
 
+  // "Armed" means a human has tapped once, so the browser now lets this
+  // element make a sound on its own. That is what buys the auto-start: the
+  // tap is the permission, the race start is the trigger. It is deliberately
+  // NOT remembered across reloads -- a browser throws the permission away on
+  // reload, so remembering the preference would only promise a sound we
+  // cannot deliver.
+  let armed = false;
+
   function mmss(t){
     if (!isFinite(t)) return '0:00';
     const m = Math.floor(t/60), s = Math.floor(t%60);
@@ -395,6 +403,7 @@ document.querySelectorAll('.cheer').forEach(button=>{button.disabled=true});
     label.textContent = failed ? 'tap again'
                       : state === 'playing' ? 'the set · playing'
                       : state === 'muted'   ? 'tap to unmute'
+                      : armed               ? 'ready · starts with the race'
                       : 'the set';
     chip.setAttribute('aria-label',
       state === 'playing' ? 'The set is playing. Tap to stop.'
@@ -408,6 +417,33 @@ document.querySelectorAll('.cheer').forEach(button=>{button.disabled=true});
     taps++;                                 // any pending play() answer is stale now
     set.pause();
     state = 'off';
+    paint();
+  }
+
+  // Starting, whether a finger or the race asked for it. Fading up over about
+  // a second and a half rather than cutting in, because a set that appears at
+  // full volume mid-bar sounds like a mistake. (iOS ignores volume set from a
+  // script, so on phones this is simply an instant start -- which is fine,
+  // they are on headphones.)
+  function begin(loud){
+    const tap = ++taps;
+    const target = presenter ? (vol.value / 100) : 1;
+    set.muted = !loud;
+    set.volume = loud ? 0 : target;
+    set.play().catch(() => {
+      if (tap !== taps) return;
+      failed = true;
+      state = 'off';
+      paint();
+    });
+    if (loud){
+      const up = setInterval(() => {
+        if (tap !== taps){ clearInterval(up); return; }
+        set.volume = Math.min(target, set.volume + target / 12);
+        if (set.volume >= target - 0.001){ set.volume = target; clearInterval(up); }
+      }, 120);
+    }
+    state = loud ? 'playing' : 'muted';
     paint();
   }
 
@@ -432,19 +468,10 @@ document.querySelectorAll('.cheer').forEach(button=>{button.disabled=true});
     // immediately and the promise is only allowed to report a FAILURE, and
     // only if it is still the most recent tap. An answer to a question nobody
     // is asking any more gets thrown away.
-    const tap = ++taps;
-    set.muted = !presenter;                 // the PA machine starts out loud
-    set.play().catch(() => {
-      if (tap !== taps) return;             // superseded; not our business
-      failed = true;
-      state = 'off';
-      paint();
-    });
-
+    armed = true;                           // from here the race may start it itself
     note.innerHTML = '<strong>Use headphones.</strong> Phone speakers all playing '
                    + 'this at once turn the room to mush. Muted until you say otherwise.';
-    state = presenter ? 'playing' : 'muted';
-    paint();
+    begin(presenter);                       // the PA machine starts out loud
   });
 
   // Best effort only: some phones tell a web page when the audio output changes
@@ -492,6 +519,29 @@ document.querySelectorAll('.cheer').forEach(button=>{button.disabled=true});
       clock.textContent = mmss(set.currentTime) + ' / ' + mmss(set.duration);
     }, 500);
   }
+
+  // When the race begins, so does the music.
+  //
+  // A browser will not let a page make a sound out of nowhere, and that rule
+  // is a good one -- so this cannot conjure audio on a page nobody has touched.
+  // What it can do is finish the job the tap started: once somebody has armed
+  // it, the admin pressing Start is what actually begins the set, which is the
+  // point. One control, in the room, doing the obvious thing.
+  let wasStatus = null;
+  function onRace(s){
+    if (!s || !s.status) return;
+    const before = wasStatus;
+    wasStatus = s.status;
+    if (!armed || state !== 'off' || failed) return;
+    const startedNow = (before === null || before === 'idle' || before === 'finished')
+                    && (s.status === 'intro' || s.status === 'countdown' || s.status === 'running');
+    if (startedNow) begin(presenter || !set.muted);
+  }
+  const beforeSet = window.render;
+  window.render = function(s){
+    try { onRace(s); } catch (e) {}
+    return beforeSet.apply(this, arguments);
+  };
 
   paint();
 })();
