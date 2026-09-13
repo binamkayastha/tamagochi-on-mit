@@ -34,6 +34,7 @@ class Mascot:
     closed: str = "L"        # palette key for a closed mouth
     head_rows: int = 6
     mini: list = None        # 2 x 3 version that fits one race lane (tamagotchi/scenes.py)
+    sprite5: list = None     # 5 x 5 reinterpretation, from race-worker/src/sprites.js on main
     _cache: dict = field(default_factory=dict, repr=False)
 
     def colors(self):
@@ -175,6 +176,8 @@ MASCOTS = {
             ],
             {"B": (200, 160, 10), "Y": (255, 90, 0)},
             eye=(40, 30, 0), closed="Y", head_rows=5, mini=["BB", "BY", "BB"],
+            # the bill (Y/M) jutting off the round head is what reads as "duck" this small
+            sprite5=[".BBB.", "BEBYM", ".BBB.", "BBBBB", ".Y.Y."],
         ),
     ]
 }

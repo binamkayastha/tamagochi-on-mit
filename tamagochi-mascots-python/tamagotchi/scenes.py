@@ -35,8 +35,19 @@ CROWN_REST_TOP = KING_TOP - 2
 CROWN = (["Y.Y.Y", "YYRYY"], {"Y": GOLD, "R": (200, 20, 40)})
 PEDESTAL_ROW = KING_TOP + 9  # just under a centred 9x9 mascot
 
-INTRO_SECONDS = 22
+INTRO_SECONDS = 26.5
 COUNTDOWN_SECONDS = 3
+
+# Only the Duck King travels with ducklings; a school mascot that won its way onto the throne
+# abdicates alone, and walks slower to fill the same beat.
+DUCKLINGS = 3                # the escort, in the Make Way for Ducklings spirit
+DUCKLING_GAP = 6             # 5 wide plus a window of daylight, so they cross in single file
+DUCKLING_TOP = KING_TOP + 4  # their feet on the king's ground line
+
+
+def waddle_reach(escorted):
+    """How far right the king walks: far enough that it, and any escort behind it, clear."""
+    return COLS + 1 + (DUCKLING_GAP * DUCKLINGS if escorted else 0)
 
 # The lane colours, kept here so race.py and the introductions' pedestals agree. These are the
 # tower's own, not the site's CSS: school crimsons are too close to tell apart at 400 m.
@@ -54,9 +65,10 @@ INTRO_BEATS = {
     "rise_end": 4500,        #   2.5-4.5   the crown lifts off, floor by floor, to the top
     "shine_end": 5500,       #   4.5-5.5   the crown waits at the top
     "melt_end": 6500,        #   5.5-6.5   the crown spreads into the gold finish line
-    "waddle_end": 9500,      #   6.5-9.5   the king waddles off the side, a window at a time
-    "introductions": 9500,   #  9.5-21.5   each challenger in turn, INTRODUCTION ms each
-    "end": 22000,
+    "waddle_end": 14000,     #  6.5-14.0   the king waddles off the side, a window at a time,
+    #                                      the ducklings crossing in single file after it
+    "introductions": 14000,  # 14.0-26.0   each challenger in turn, INTRODUCTION ms each
+    "end": 26500,
 }
 INTRODUCTION = {
     "length": 3000,
@@ -149,14 +161,29 @@ def reign_frame(t, champion=None):
     return frame
 
 
+def _ducklings(frame, left):
+    """The king's escort: little ducks crossing after it, each out of step with the last."""
+    duckling = MASCOTS["duckling"]
+    for i in range(DUCKLINGS):
+        bob = (left + i) % 2       # a one-window bob, so they waddle rather than slide
+        blit(frame, duckling.sprite5, DUCKLING_TOP - bob, left - DUCKLING_GAP * (i + 1),
+             duckling.colors())
+
+
 def _abdication(frame, ms, b, king):
-    """The king bows, gives up the crown (it becomes the finish line) and waddles off."""
+    """The king bows, gives up the crown (it becomes the finish line) and waddles off to the
+    right, ducklings in tow."""
     if ms < b["waddle_end"]:
+        escorted = king is MASCOTS["duckling"]     # the ducklings belong to the Duck King alone
         bow = round(ease(between(ms, b["hold_end"], b["bow_end"])))
+        walking = ms >= b["melt_end"]
         # Whole-window steps at a steady pace; faster steps or hops read as flicker at this scale.
-        left = math.floor(between(ms, b["melt_end"], b["waddle_end"]) * (COLS + 1)) if ms >= b["melt_end"] else 0
-        pose = "idle" if ms < b["hold_end"] or ms >= b["melt_end"] else "sleep"   # eyes shut while bowing
-        blit(frame, king.poses()[pose], KING_TOP + (0 if ms >= b["melt_end"] else bow), left, king.colors())
+        reach = waddle_reach(escorted)
+        left = math.floor(between(ms, b["melt_end"], b["waddle_end"]) * reach) if walking else 0
+        pose = "idle" if ms < b["hold_end"] or walking else "sleep"   # eyes shut while bowing
+        blit(frame, king.poses()[pose], KING_TOP + (0 if walking else bow), left, king.colors())
+        if walking and escorted:
+            _ducklings(frame, left)
 
     # the crown: lifts off to rows 0-1, waits, then spreads along row 0 into the finish line
     crown_top = round(CROWN_REST_TOP * (1 - ease(between(ms, b["bow_end"], b["rise_end"]))))
