@@ -90,6 +90,10 @@ export function buildFrame({ progressCols, status, winner }, t = 0) {
         grid[RACE_BOTTOM - floor][col] = px;
       }
     }
+    // the mascot rides the surface of its own colour, from the riverbank up to the finish line
+    const surface = RACE_BOTTOM - height;
+    const top = Math.max(RACE_TOP, Math.min(START_TOP, Math.round(surface) - (MASCOT_HEIGHT - 1)));
+    drawLaneMascot(grid, school, left, top);
   });
 
   // finish line: gold, or the winner's colour once someone's won

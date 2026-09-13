@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 
-import { COLS, LANE_COLS, OFF, RACE_BOTTOM, RACE_TOP, ROWS, buildFrame } from "../src/render.js";
+import { COLS, LANE_COLS, OFF, RACE_BOTTOM, RACE_TOP, ROWS, START_TOP, buildFrame } from "../src/render.js";
 import { DEFAULT_MAX_BRIGHTNESS, FlashGuard, GUARD_FLASHES_PER_SECOND, MAX_FLASHES_PER_SECOND, capBrightness, worstFlashRate } from "../src/safety.js";
 import {
   ANIMATED_STATUSES,
@@ -92,19 +92,22 @@ test("frameFor follows the status", () => {
   assert.deepEqual(frameFor({ ...base, status: "running", progressCols }, 0), raceStartFrame());
 });
 
-test("lanes fill from the river up to the finish line", () => {
+test("lanes fill from the river up, with each mascot riding its own surface", () => {
   const frame = buildFrame({ progressCols: { mit: 8, harvard: 4, bu: 0, neu: 2 }, status: "running", winner: null });
   const lit = (col) => frame.map((row, r) => (row[col] === OFF ? null : r)).filter((r) => r !== null);
   const bright = (col, row) => Math.max(...frame[row][col]);
 
-  // MIT is full: every floor between the finish line and the river is lit
+  // MIT is full: lit from the finish line down, its mascot just under the banner
   assert.deepEqual(lit(LANE_COLS[0]).slice(0, 3), [0, 1, 2]);
-  // BU has nothing yet, so its lane sits at the unlit tint rather than going dark
-  assert.notDeepEqual(frame[RACE_BOTTOM][LANE_COLS[2]], OFF);
-  assert.ok(bright(LANE_COLS[2], RACE_BOTTOM) < bright(LANE_COLS[0], RACE_BOTTOM));
-  // Harvard is half way: lit at the bottom, unlit at the top
+  // Harvard is half way: its colour is lit at the bottom and unlit at the top
   assert.ok(bright(LANE_COLS[1], RACE_BOTTOM) > bright(LANE_COLS[1], RACE_TOP));
   assert.equal(frame[8][4], OFF); // the gap column between Harvard and BU stays dark
+
+  // Each mascot sits at the surface of its own fill: full lane at the top, empty on the bank.
+  const mascotTop = (col) => lit(col).find((r) => r > 0 && bright(col, r) > bright(col, RACE_BOTTOM) * 0.9);
+  assert.ok(mascotTop(LANE_COLS[0]) < mascotTop(LANE_COLS[3])); // MIT (full) above NEU (barely started)
+  const empty = buildFrame({ progressCols: { mit: 0, harvard: 0, bu: 0, neu: 0 }, status: "running", winner: null });
+  for (const col of LANE_COLS) assert.notDeepEqual(empty[START_TOP][col], OFF); // all four on the riverbank
 });
 
 test("every challenger is introduced, in lane order, before the countdown", () => {
