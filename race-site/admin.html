@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Race Admin</title>
+<style>
+  :root{--night:#0a0d16;--slate:#161c2b;--brass:#c9a668;--paper:#eef1f6;--muted:#8a93ab;}
+  *{box-sizing:border-box;}
+  body{
+    margin:0;min-height:100vh;background:var(--night);color:var(--paper);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    padding:24px 16px 48px;
+  }
+  .wrap{max-width:520px;margin:0 auto;}
+  h1{font-size:1.5rem;margin:0 0 20px;}
+  section{
+    background:var(--slate);border:1px solid #ffffff14;border-radius:12px;
+    padding:16px;margin-bottom:16px;
+  }
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px;}
+  input{
+    width:100%;padding:10px;border-radius:8px;border:1px solid #ffffff2a;
+    background:#0000003a;color:var(--paper);font-size:15px;margin-bottom:10px;
+  }
+  .row{display:flex;gap:10px;flex-wrap:wrap;}
+  button{
+    flex:1;min-width:120px;padding:12px;border:none;border-radius:8px;
+    font-weight:700;font-size:14px;cursor:pointer;background:var(--brass);color:var(--night);
+  }
+  button.danger{background:#c0392b;color:var(--paper);}
+  button.secondary{background:#2a3245;color:var(--paper);}
+  pre{
+    background:#00000055;padding:12px;border-radius:8px;overflow-x:auto;
+    font-size:12px;color:var(--muted);
+  }
+  #log{white-space:pre-wrap;font-size:12px;color:var(--muted);margin-top:8px;}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Green Building Race — Admin</h1>
+
+    <section>
+      <label for="key">Admin key</label>
+      <input id="key" type="password" placeholder="admin key" autocomplete="off">
+      <div class="row">
+        <button id="save-key" class="secondary">Save key (this device)</button>
+      </div>
+    </section>
+
+    <section>
+      <div class="row">
+        <button id="start">Start race</button>
+        <button id="stop" class="secondary">Stop / pause</button>
+        <button id="reset" class="danger">Reset</button>
+      </div>
+    </section>
+
+    <section>
+      <div class="row">
+        <button id="rotate" class="secondary">Mint fresh sim instance</button>
+      </div>
+      <div id="log"></div>
+    </section>
+
+    <section>
+      <label>Live state</label>
+      <pre id="state">loading&hellip;</pre>
+    </section>
+  </div>
+
+<script src="config.js"></script>
+<script>
+  const keyInput = document.getElementById("key");
+  keyInput.value = sessionStorage.getItem("adminKey") ?? "";
+
+  document.getElementById("save-key").addEventListener("click", () => {
+    sessionStorage.setItem("adminKey", keyInput.value);
+    log("Key saved for this browser tab session.");
+  });
+
+  function log(msg) {
+    document.getElementById("log").textContent = msg;
+  }
+
+  async function adminPost(path) {
+    const key = sessionStorage.getItem("adminKey") ?? keyInput.value;
+    const resp = await fetch(`${API_BASE}${path}`, {
+      method: "POST",
+      headers: { "X-Admin-Key": key },
+    });
+    const data = await resp.json().catch(() => ({}));
+    if (!resp.ok) log(`Error: ${data.error ?? resp.status}`);
+    else log(`OK: ${path}`);
+    return data;
+  }
+
+  document.getElementById("start").addEventListener("click", () => adminPost("/api/admin/start"));
+  document.getElementById("stop").addEventListener("click", () => adminPost("/api/admin/stop"));
+  document.getElementById("reset").addEventListener("click", () => {
+    if (confirm("Reset the race? This clears all cheers.")) adminPost("/api/admin/reset");
+  });
+  document.getElementById("rotate").addEventListener("click", async () => {
+    const data = await adminPost("/api/admin/rotate-instance");
+    if (data.view_url) log(`New instance: ${data.name}\nView: ${data.view_url}`);
+  });
+
+  async function poll() {
+    try {
+      const resp = await fetch(`${API_BASE}/api/state`);
+      document.getElementById("state").textContent = JSON.stringify(await resp.json(), null, 2);
+    } catch {
+      document.getElementById("state").textContent = "Can't reach the race server.";
+    }
+  }
+  poll();
+  setInterval(poll, 1000);
+</script>
+</body>
+</html>

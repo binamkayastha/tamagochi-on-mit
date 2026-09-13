@@ -35,6 +35,11 @@ class ShippedAnimationsTest(unittest.TestCase):
         rate, where = worst_flash_rate(frames())
         self.assertLessEqual(rate, MAX_FLASHES_PER_SECOND, where)
 
+    def test_mascot_race(self):
+        from race import scripted_frames
+        rate, where = worst_flash_rate(scripted_frames())
+        self.assertLessEqual(rate, MAX_FLASHES_PER_SECOND, where)
+
 
 if __name__ == "__main__":
     unittest.main()

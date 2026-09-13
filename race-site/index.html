@@ -1,0 +1,346 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Green Building Race</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Karla:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --night: #0a0d16;
+    --slate: #161c2b;
+    --slate-2: #1d2438;
+    --brass: #c9a668;
+    --paper: #eef1f6;
+    --muted: #8a93ab;
+    --mit: #a31f34;
+    --harvard: #8a2be2;
+    --bu: #cc0000;
+    --neu: #f4f4f4;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    min-height:100vh;
+    background:
+      radial-gradient(ellipse 900px 500px at 50% -10%, #2a1f4022, transparent 60%),
+      var(--night);
+    color:var(--paper);
+    font-family:'Karla',-apple-system,BlinkMacSystemFont,sans-serif;
+    padding:24px 16px 56px;
+  }
+  .wrap{max-width:600px;margin:0 auto;}
+
+  header{text-align:center;margin-bottom:22px;}
+  .kicker{
+    font-family:'Press Start 2P',monospace;
+    font-size:9px;
+    letter-spacing:.08em;
+    color:var(--brass);
+    margin:0 0 12px;
+  }
+  h1{
+    font-family:'Press Start 2P',monospace;
+    font-size:clamp(1.1rem,5.5vw,1.6rem);
+    line-height:1.6;
+    margin:0 0 10px;
+    text-wrap:balance;
+  }
+  .sub{color:var(--muted);font-size:14px;margin:0;}
+
+  #status-banner{
+    text-align:center;
+    padding:12px 16px;
+    border-radius:10px;
+    background:var(--slate);
+    border:1px solid #ffffff1a;
+    margin-bottom:20px;
+    font-weight:700;
+    font-size:15px;
+    transition:background .3s, border-color .3s;
+  }
+  #status-banner.finished{
+    background:#2a2210;
+    border-color:var(--brass);
+    color:var(--brass);
+    animation:glow 1.6s ease-in-out infinite;
+  }
+  @keyframes glow{
+    0%,100%{box-shadow:0 0 0 rgba(201,166,104,0);}
+    50%{box-shadow:0 0 18px rgba(201,166,104,.5);}
+  }
+
+  .lanes{display:flex;flex-direction:column;gap:14px;}
+  .lane{
+    background:var(--slate);
+    border-radius:14px;
+    padding:14px 16px 16px;
+    border:1px solid #ffffff14;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .lane.winner{border-color:var(--school-color, var(--brass));box-shadow:0 0 0 1px var(--school-color, var(--brass));}
+
+  .lane-head{display:flex;align-items:center;gap:12px;}
+  .sprite-box{
+    position:relative;
+    flex:none;
+    width:54px;height:54px;
+    border-radius:8px;
+    background:#00000033;
+    display:flex;align-items:center;justify-content:center;
+  }
+  canvas.sprite{image-rendering:pixelated;width:48px;height:48px;}
+  .lane-names{flex:1;min-width:0;}
+  .lane-names .school{font-weight:700;font-size:16px;}
+  .lane-names .mascot{color:var(--muted);font-size:12.5px;}
+
+  .track{display:flex;gap:3px;}
+  .cell{
+    flex:1;
+    aspect-ratio:1;
+    border-radius:3px;
+    background:#00000055;
+    transition:background .25s;
+  }
+
+  button.cheer{
+    width:100%;
+    padding:14px;
+    border:none;
+    border-radius:10px;
+    font-size:15px;
+    font-weight:700;
+    color:var(--night);
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+    user-select:none;
+    position:relative;
+    overflow:visible;
+    transition:transform .08s ease-out, filter .15s;
+  }
+  button.cheer:active{transform:scale(.96);filter:brightness(1.15);}
+  button.cheer:disabled{opacity:.35;cursor:default;}
+
+  .particle{
+    position:absolute;
+    top:6px;left:50%;
+    width:8px;height:8px;
+    border-radius:2px;
+    pointer-events:none;
+    animation:pop .7s ease-out forwards;
+  }
+  @keyframes pop{
+    0%{transform:translate(-50%,0) scale(1);opacity:1;}
+    100%{transform:translate(var(--dx),-46px) scale(.4);opacity:0;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    .particle{display:none;}
+    #status-banner.finished{animation:none;}
+  }
+
+  footer{text-align:center;color:var(--muted);font-size:12px;margin-top:32px;}
+  footer a{color:var(--brass);}
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <p class="kicker">SUNDAI &middot; GREEN BUILDING</p>
+      <h1>Race up the<br>Green Building</h1>
+      <p class="sub">Cheer for your school &mdash; every cheer pushes your mascot up a floor.</p>
+    </header>
+    <div id="status-banner">Waiting for the race to start&hellip;</div>
+    <div class="lanes" id="lanes"></div>
+    <footer>Watch it live on the building, or at <a href="https://sundai.willsarg.com">the simulator</a>.</footer>
+  </div>
+
+<script src="config.js"></script>
+<script>
+  // Pixel mascots ported verbatim from the `mascots` branch
+  // (tamagochi-mascots-python/tamagotchi/mascots.py) so the site matches whatever
+  // shows on the building. Sprite chars: palette keys, E = eye, M = mouth, . = off.
+  const COMMON = { N: "#ff5078", T: "#bebeb4", Y: "#ffbe00" };
+  const WHITE = "#ffffff";
+
+  const MASCOTS = {
+    mit: {
+      name: "Tim the Beaver", school: "MIT", color: "var(--mit)",
+      sprite: [
+        ".B.....B.", ".BBBBBBB.", "BBEBBBEBB", "BBBLNLBBB", ".BBTMTBB.",
+        "..BBBBB..", ".BLLLLLB.", ".BLLLLLBK", ".BB...BBK",
+      ],
+      palette: { B: "#b96923", L: "#ebaa64", K: "#6e370f" },
+      eye: WHITE, lid: "B", closed: "L",
+    },
+    harvard: {
+      name: "John Harvard", school: "Harvard", color: "var(--harvard)",
+      sprite: [
+        "..HHHHH..", "..HHYHH..", "HHHHHHHHH", ".GLLLLLG.", ".GELLLEG.",
+        ".GLLMLLG.", "..CCCCC..", ".KKKKKKK.", ".KK...KK.",
+      ],
+      palette: { H: "#5a5a8c", G: "#9696a5", L: "#e6aa82", C: "#c8c8be", K: "#be1e37" },
+      eye: "#502814", lid: "L", closed: "L",
+    },
+    bu: {
+      name: "Rhett the Terrier", school: "BU", color: "var(--bu)",
+      sprite: [
+        "BB.....BB", "BBB...BBB", "BBBBLBBBB", "BEBBLBBEB", "BBLLNLLBB",
+        ".BLLMLLB.", "..KKKKK..", ".BBLLLBB.", ".BB...BB.",
+      ],
+      palette: { B: "#505fc8", L: "#bebebe", K: "#cc0000" },
+      eye: WHITE, lid: "B", closed: "L",
+    },
+    neu: {
+      name: "Paws the Husky", school: "Northeastern", color: "var(--neu)",
+      sprite: [
+        "B.......B", "BB.....BB", "BBBBBBBBB", "BLELLLELB", "BLLLNLLLB",
+        ".LLLMLLL.", "..BLLLB..", ".BBLLLBB.", ".BB...BB.",
+      ],
+      palette: { B: "#788296", L: "#b9bec8" },
+      eye: "#5abeff", lid: "L", closed: "L",
+    },
+  };
+  const SCHOOLS = ["mit", "harvard", "bu", "neu"];
+  const FINISH_COLS = 8;
+  const reduceMotion = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  function resolveColor(ch, m) {
+    if (ch === ".") return null;
+    if (ch === "E") return m.eye;
+    if (ch === "M") return m.palette[m.closed];
+    return m.palette[ch] ?? COMMON[ch] ?? null;
+  }
+
+  function drawSprite(canvas, mascot, blink) {
+    const ctx = canvas.getContext("2d");
+    const n = mascot.sprite.length;
+    const cell = canvas.width / n;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    mascot.sprite.forEach((row, r) => {
+      [...row].forEach((ch, c) => {
+        const key = blink && ch === "E" ? mascot.lid : ch;
+        const color = resolveColor(key, mascot);
+        if (!color) return;
+        ctx.fillStyle = color;
+        ctx.fillRect(c * cell, r * cell, cell + 0.5, cell + 0.5);
+      });
+    });
+  }
+
+  function scheduleBlink(canvas, mascot) {
+    if (reduceMotion) return;
+    const delay = 2600 + Math.random() * 3200;
+    setTimeout(() => {
+      drawSprite(canvas, mascot, true);
+      setTimeout(() => drawSprite(canvas, mascot, false), 130);
+      scheduleBlink(canvas, mascot);
+    }, delay);
+  }
+
+  const lanesEl = document.getElementById("lanes");
+  const bannerEl = document.getElementById("status-banner");
+
+  SCHOOLS.forEach((id) => {
+    const m = MASCOTS[id];
+    const lane = document.createElement("div");
+    lane.className = "lane";
+    lane.id = `lane-${id}`;
+    lane.style.setProperty("--school-color", m.color);
+    lane.innerHTML = `
+      <div class="lane-head">
+        <div class="sprite-box"><canvas class="sprite" id="sprite-${id}" width="36" height="36"></canvas></div>
+        <div class="lane-names">
+          <div class="school">${m.school}</div>
+          <div class="mascot">${m.name}</div>
+        </div>
+      </div>
+      <div class="track" id="track-${id}"></div>
+      <button class="cheer" id="btn-${id}" style="background:${m.color}">Cheer for ${m.school}</button>
+    `;
+    lanesEl.appendChild(lane);
+
+    const track = document.getElementById(`track-${id}`);
+    for (let i = 0; i < 9; i++) {
+      const cell = document.createElement("div");
+      cell.className = "cell";
+      track.appendChild(cell);
+    }
+
+    const canvas = document.getElementById(`sprite-${id}`);
+    drawSprite(canvas, m, false);
+    scheduleBlink(canvas, m);
+
+    document.getElementById(`btn-${id}`).addEventListener("click", (e) => {
+      cheer(id);
+      burst(e.currentTarget, m.color);
+    });
+  });
+
+  function burst(button, color) {
+    if (reduceMotion) return;
+    for (let i = 0; i < 6; i++) {
+      const p = document.createElement("span");
+      p.className = "particle";
+      p.style.background = color;
+      p.style.setProperty("--dx", `${(Math.random() - 0.5) * 60}px`);
+      p.style.animationDelay = `${Math.random() * 60}ms`;
+      button.appendChild(p);
+      p.addEventListener("animationend", () => p.remove());
+    }
+  }
+
+  async function cheer(school) {
+    try {
+      await fetch(`${API_BASE}/api/cheer`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ school }),
+      });
+    } catch {
+      // network hiccup — next poll resyncs the UI either way
+    }
+  }
+
+  function render(state) {
+    const running = state.status === "running";
+    SCHOOLS.forEach((id) => {
+      const progress = Math.max(0, Math.min(FINISH_COLS, state.progressCols[id] ?? 0));
+      const filled = Math.floor(progress);
+      const frac = progress - filled;
+      const cells = document.querySelectorAll(`#track-${id} .cell`);
+      cells.forEach((cell, i) => {
+        if (i < filled) { cell.style.background = MASCOTS[id].color; cell.style.opacity = 1; }
+        else if (i === filled && frac > 0.1) { cell.style.background = MASCOTS[id].color; cell.style.opacity = 0.35 + frac * 0.65; }
+        else { cell.style.background = "#00000055"; cell.style.opacity = 1; }
+      });
+      document.getElementById(`btn-${id}`).disabled = !running;
+      document.getElementById(`lane-${id}`).classList.toggle("winner", state.status === "finished" && state.winner === id);
+    });
+
+    bannerEl.classList.toggle("finished", state.status === "finished");
+    if (state.status === "idle") bannerEl.textContent = "Waiting for the race to start…";
+    else if (state.status === "running") bannerEl.textContent = "Race is on — cheer!";
+    else if (state.status === "finished") {
+      const winner = MASCOTS[state.winner];
+      bannerEl.textContent = `🏆 ${winner ? winner.school : state.winner} wins! (${winner?.name})`;
+    }
+  }
+
+  async function poll() {
+    try {
+      const resp = await fetch(`${API_BASE}/api/state`);
+      render(await resp.json());
+    } catch {
+      bannerEl.textContent = "Can't reach the race server… retrying";
+    }
+  }
+
+  poll();
+  setInterval(poll, 500);
+</script>
+</body>
+</html>

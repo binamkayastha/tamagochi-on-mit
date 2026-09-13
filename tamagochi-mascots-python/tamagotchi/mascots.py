@@ -33,6 +33,7 @@ class Mascot:
     lid: str = "B"           # palette key the eye closes to
     closed: str = "L"        # palette key for a closed mouth
     head_rows: int = 6
+    mini: list = None        # 2 x 3 version that fits one race lane (tamagotchi/scenes.py)
     _cache: dict = field(default_factory=dict, repr=False)
 
     def colors(self):
@@ -76,6 +77,7 @@ MASCOTS = {
                 ".BB...BBK",
             ],
             {"B": (185, 105, 35), "L": (235, 170, 100), "K": (110, 55, 15)},
+            mini=["BB", "EE", "LL"],
         ),
         Mascot(
             "husky", "Paws the Husky", "NEU", "neu",
@@ -91,7 +93,7 @@ MASCOTS = {
                 ".BB...BB.",
             ],
             {"B": (120, 130, 150), "L": (185, 190, 200)},
-            eye=(90, 190, 255), lid="L", head_rows=6,
+            eye=(90, 190, 255), lid="L", head_rows=6, mini=["BB", "EE", "LL"],
         ),
         Mascot(
             "terrier", "Rhett the Terrier", "BU", "bu",
@@ -107,7 +109,7 @@ MASCOTS = {
                 ".BB...BB.",
             ],
             {"B": (80, 95, 200), "L": (190, 190, 190), "K": (204, 0, 0)},
-            head_rows=6,
+            head_rows=6, mini=["BB", "LL", "KK"],
         ),
         Mascot(
             "elephant", "Jumbo the Elephant", "TUFTS", "tufts",
@@ -142,6 +144,23 @@ MASCOTS = {
             eye=(255, 200, 0), lid="L", closed="Y", head_rows=5,
         ),
         Mascot(
+            "john-harvard", "John Harvard", "HARVARD", "harvard",
+            [
+                "..HHHHH..",
+                "..HHYHH..",
+                "HHHHHHHHH",
+                ".GLLLLLG.",
+                ".GELLLEG.",
+                ".GLLMLLG.",
+                "..CCCCC..",
+                ".KKKKKKK.",
+                ".KK...KK.",
+            ],
+            {"H": (90, 90, 140), "G": (150, 150, 165), "L": (230, 170, 130),
+             "C": (200, 200, 190), "K": (190, 30, 55)},
+            eye=(80, 40, 20), lid="L", closed="L", mini=["HH", "LL", "KK"],
+        ),
+        Mascot(
             "duckling", "Make Way Duckling", "BOSTON", "other",
             [
                 "...BBB...",
@@ -155,7 +174,7 @@ MASCOTS = {
                 "..Y..Y...",
             ],
             {"B": (200, 160, 10), "Y": (255, 90, 0)},
-            eye=(40, 30, 0), closed="Y", head_rows=5,
+            eye=(40, 30, 0), closed="Y", head_rows=5, mini=["BB", "BY", "BB"],
         ),
     ]
 }

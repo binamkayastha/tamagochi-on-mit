@@ -12,8 +12,9 @@ the original Tetris game plus the pet character picker and the client for the
 [Green Building sim](https://sundai.willsarg.com).
 
 School mascots (MIT beaver, NEU husky, BU terrier, Tufts elephant, BC eagle, Boston duckling),
-a flash-safe display guard, and the crowd-raised pet game live in
-[`tamagochi-mascots-python/`](tamagochi-mascots-python) — stdlib only, see its README.
+a flash-safe display guard, the crowd-raised pet game, and the four-school tapping race
+(`race.py`) live in [`tamagochi-mascots-python/`](tamagochi-mascots-python) — stdlib only,
+see its README.
 
 ## Setup
 
