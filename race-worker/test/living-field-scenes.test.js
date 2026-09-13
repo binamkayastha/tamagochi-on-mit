@@ -63,10 +63,22 @@ test("finale runs exactly the ~11s the living_field README promises", () => {
 });
 
 test("the living-field scene registry matches its frame generators", () => {
-  assert.deepEqual(
-    Object.keys(LIVING_FIELD_SCENES).sort(),
-    ["attention", "aurora", "dream", "finale", "forecast", "memory", "radar", "seismic", "sounding", "startle"],
-  );
+  assert.deepEqual(Object.keys(LIVING_FIELD_SCENES).sort(), [
+    "attention",
+    "aurora",
+    "dream",
+    "finale",
+    "forecast",
+    "memory",
+    "radar",
+    "scroll-bu",
+    "scroll-harvard",
+    "scroll-mit",
+    "scroll-neu",
+    "seismic",
+    "sounding",
+    "startle",
+  ]);
   for (const [id, scene] of Object.entries(LIVING_FIELD_SCENES)) {
     assert.equal(typeof scene.label, "string");
     assert.ok(scene.seconds > 0, `${id} needs a positive preview duration`);

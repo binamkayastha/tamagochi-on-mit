@@ -13,6 +13,16 @@ const ALARM_INTERVAL_MS = 400; // how often a running race repaints the building
 const CHEER_COOLDOWN_MS = 150; // per (ip, school) — blocks scripts, not enthusiastic tapping
 const SIM_BASE = "https://sundai.willsarg.com";
 
+// Crowd-presence: "someone is here" and "the crowd's energy right now", from data the
+// server already has (who's polling, who just cheered) — no new client capability needed.
+// Both live only in memory (this.recentViewers / this.recentCheerEvents), never persisted:
+// losing them on an eviction just means the numbers reset, which is fine for a cosmetic
+// crowd-feel signal, not the source of truth the way cheer counts are.
+const VIEWER_WINDOW_MS = 20_000; // counts as "here" if a poll/cheer landed in the last 20s
+const HYPE_WINDOW_S = 5; // cheers/second, averaged over the trailing 5s
+const RECENT_CHEER_KEEP_MS = 8_000; // how long a cheer stays in the pulse feed
+const RECENT_CHEER_MAX = 200; // hard cap regardless of window, in case of a real flood
+
 // Scenes (reign / intro / countdown) need smoother motion than the race's 400 ms repaint.
 // One alarm invocation streams a short batch of frames, then re-arms; a batch stays under
 // the Workers free-plan limit of 50 subrequests per invocation.
@@ -53,6 +63,8 @@ export class RaceState extends DurableObject {
     this.lastCheerAt = new Map();
     this.guard = new FlashGuard();
     this.previewGeneration = 0; // >0 while a debug preview streams; alarm() yields to it
+    this.recentViewers = new Map(); // ip -> last-seen ms; crowd-presence, see VIEWER_WINDOW_MS
+    this.recentCheerEvents = []; // [{school, t}], newest last; crowd-presence, see RECENT_CHEER_*
     this.state_ = null;
     ctx.blockConcurrencyWhile(async () => {
       const stored = await ctx.storage.get("state");
@@ -98,7 +110,36 @@ export class RaceState extends DurableObject {
         this.state_.status === "intro" ? introducingAt(Date.now() - this.state_.phaseStartedAt, this.state_.config) : null,
       config: this.state_.config,
       hasInstance: Boolean(this.state_.instance),
+      viewerCount: this.recentViewers.size,
+      hype: this.hypeNow(),
+      // recent cheers, oldest first, as {school, t}; t is server epoch ms (compare against
+      // this response's own serverTime, same clock-drift pattern as phaseEndsAt) so a client
+      // can pulse for whichever ones it hasn't shown yet without needing a websocket.
+      recentCheers: this.recentCheerEvents.map(({ school, t }) => ({ school, t })),
     };
+  }
+
+  /** Prune stale entries and record `ip` as currently present, if given. */
+  touchViewer(ip, now = Date.now()) {
+    if (ip) this.recentViewers.set(ip, now);
+    for (const [k, t] of this.recentViewers) {
+      if (now - t > VIEWER_WINDOW_MS) this.recentViewers.delete(k);
+    }
+  }
+
+  /** Cheers per second, trailing HYPE_WINDOW_S — the crowd's energy right now. */
+  hypeNow(now = Date.now()) {
+    const windowMs = HYPE_WINDOW_S * 1000;
+    const n = this.recentCheerEvents.reduce((count, e) => count + (now - e.t <= windowMs ? 1 : 0), 0);
+    return Math.round((n / HYPE_WINDOW_S) * 10) / 10;
+  }
+
+  recordCheerEvent(school, now) {
+    this.recentCheerEvents.push({ school, t: now });
+    while (this.recentCheerEvents.length > RECENT_CHEER_MAX) this.recentCheerEvents.shift();
+    while (this.recentCheerEvents.length && now - this.recentCheerEvents[0].t > RECENT_CHEER_KEEP_MS) {
+      this.recentCheerEvents.shift();
+    }
   }
 
   enterPhase(status, now, seconds = null) {
@@ -125,14 +166,16 @@ export class RaceState extends DurableObject {
 
   // -- public RPCs (called from the Worker's fetch router) -------------------
 
-  async getState() {
+  async getState(ip) {
     await this.advance(Date.now());
+    this.touchViewer(ip);
     return this.publicState();
   }
 
   async cheer(school, ip) {
     if (!isSchool(school)) throw new Error("unknown school");
     await this.advance(Date.now());
+    this.touchViewer(ip); // a cheer is also "someone's here", even between polls
     if (this.state_.status !== "running") return { ok: false, reason: "not running", state: this.publicState() };
 
     const key = `${ip}|${school}`;
@@ -144,6 +187,7 @@ export class RaceState extends DurableObject {
     this.lastCheerAt.set(key, now);
 
     this.state_.cheers[school] += 1;
+    this.recordCheerEvent(school, now);
     await this.checkWin();
     await this.persist();
     return { ok: true, state: this.publicState() };

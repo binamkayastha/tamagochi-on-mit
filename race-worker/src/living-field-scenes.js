@@ -42,6 +42,10 @@
 //              fixed synthetic `SAMPLE_FORECAST_ROWS` depicting a front arriving (heavy rain/cloud
 //              16h out fading to clear "now"), which shows the effect the README calls the whole
 //              point of the scene: a bright band arriving at the roof and descending to the street.
+//   scroll-*   each school's name scrolling across a band near the roof (text.py's `Ticker`,
+//              ported in ticker.js — this file just registers one preview per school). A
+//              test of "show the university name scrolling past the top during its
+//              introduction" — these are debug previews only, not wired into the real intro yet.
 //
 // These are picked because each is either a pure function of a clock, or made pure for this
 // preview with a small, fixed, deterministic synthetic ctx (documented per-scene above and at
@@ -76,8 +80,10 @@
 // scenes.js blends colours everywhere else. The shapes and motion match the originals;
 // the exact tonal curve does not, and that trade felt right for a debug preview rather
 // than a pixel-exact port.
-import { COLS, ROWS } from "./render.js";
+import { COLS, ROWS, softenColor } from "./render.js";
 import { blank, mix } from "./sprites.js";
+import { SCHOOLS, SCHOOL_INFO } from "./mascots.js";
+import { tickerDuration, tickerFrame } from "./ticker.js";
 
 const TAU = Math.PI * 2;
 const clamp01 = (v) => Math.max(0, Math.min(1, v));
@@ -608,4 +614,19 @@ export const LIVING_FIELD_SCENES = {
   memory: { label: "Memory", seconds: 10, frame: (t) => memoryFrame(t) },
   dream: { label: "Dream", seconds: 22, frame: (t) => dreamFrame(t) },
   forecast: { label: "Forecast", seconds: 12, frame: (t) => forecastFrame(t) },
+  ...Object.fromEntries(
+    SCHOOLS.map((school) => {
+      const { name, color } = SCHOOL_INFO[school];
+      const message = name.toUpperCase();
+      const softened = softenColor(color);
+      return [
+        `scroll-${school}`,
+        {
+          label: `Scroll: ${name}`,
+          seconds: tickerDuration(message) / 1000,
+          frame: (t) => tickerFrame(t, { message, color: softened }),
+        },
+      ];
+    }),
+  ),
 };
